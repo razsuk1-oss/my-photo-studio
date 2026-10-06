@@ -11,11 +11,11 @@ from io import BytesIO
 UPLOAD_FOLDER = "uploaded_photos"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# আপনার তথ্য এখানে বসান:
-STUDIO_UPI_ID = "9775917899@YBL"      # আপনার GPay/PhonePe UPI ID
-STUDIO_WHATSAPP = "919775917899"         # দেশের কোডসহ আপনার WhatsApp নম্বর
+# আপনার নিজস্ব তথ্য এখানে বসান:
+STUDIO_UPI_ID = "your-upi-id@okaxis"      # আপনার UPI ID (PhonePe/GPay)
+STUDIO_WHATSAPP = "919876543210"         # WhatsApp নম্বর (যেমন: 91...)
 
-# প্রতি সার্ভিসের দাম (টাকায়)
+# প্রতি সার্ভিসের দাম
 SERVICE_PRICES = {
     "পাসপোর্ট সাইজ ফটো (3.2 x 4 cm)": 50,
     "স্ট্যাম্প সাইজ ফটো": 40,
@@ -24,7 +24,7 @@ SERVICE_PRICES = {
     "আইডি কার্ড প্রিন্ট": 60
 }
 
-# ================= ডাটাবেস =================
+# ================= ডাটাবেস ফাংশন =================
 def init_db():
     conn = sqlite3.connect("studio_orders.db")
     c = conn.cursor()
@@ -67,6 +67,20 @@ def get_orders():
     conn.close()
     return df
 
+def search_orders_by_customer(query_str):
+    conn = sqlite3.connect("studio_orders.db")
+    query_clean = str(query_str).strip()
+    
+    # আইডি অথবা ফোন নম্বর দিয়ে খোঁজা
+    query = """
+        SELECT * FROM orders 
+        WHERE phone LIKE ? OR id = ? 
+        ORDER BY id DESC
+    """
+    df = pd.read_sql_query(query, conn, params=(f"%{query_clean}%", query_clean if query_clean.isdigit() else -1))
+    conn.close()
+    return df
+
 def update_status(order_id, new_status):
     conn = sqlite3.connect("studio_orders.db")
     c = conn.cursor()
@@ -81,15 +95,14 @@ def generate_upi_qr(upi_id, amount, note):
     qr.save(buffer, format="PNG")
     return buffer.getvalue()
 
-# ================= পেজ লেআউট ও নাম =================
+# ================= পেজ লেআউট ও মেনু =================
 st.set_page_config(page_title="STUDIO RAZ | Online Order Portal", page_icon="📸", layout="wide")
 
 st.sidebar.markdown("<h2 style='text-align: center; color: #2563EB;'>📷 STUDIO RAZ</h2>", unsafe_allow_html=True)
-menu = st.sidebar.radio("Navigation", ["কাস্টমার অর্ডার ফর্ম", "স্টুডিও অ্যাডমিন প্যানেল"])
+menu = st.sidebar.radio("Navigation", ["কাস্টমার অর্ডার ফর্ম", "🔍 অর্ডার ট্র্যাক করুন", "স্টুডিও অ্যাডমিন প্যানেল"])
 
-# ================= কাস্টমার ফর্ম =================
+# ================= ১. কাস্টমার অর্ডার ফর্ম =================
 if menu == "কাস্টমার অর্ডার ফর্ম":
-    # বড় ব্যানার হেডার
     st.markdown("<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>📸 STUDIO RAZ 📸</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: gray; font-size: 18px;'>অনলাইন ফটো প্রিন্টিং ও কাস্টমাইজেশন সার্ভিস</p>", unsafe_allow_html=True)
     st.write("---")
@@ -114,7 +127,7 @@ if menu == "কাস্টমার অর্ডার ফর্ম":
         pay_method = st.radio("পেমেন্ট কীভাবে করবেন?", ["UPI (GPay/PhonePe/Paytm QR)", "দোকানে এসে ক্যাশ দেবেন (Cash on Delivery)"])
         
         if pay_method.startswith("UPI"):
-            st.write("নিচের QR কোডটি স্ক্যান করে পেমেন্ট সম্পন্ন করুন:")
+            st.write("নিচের QR কোডটি স্ক্যান করে পেমেন্ট করুন:")
             qr_img = generate_upi_qr(STUDIO_UPI_ID, total_bill, f"STUDIO RAZ Order {phone}")
             st.image(qr_img, width=220, caption=f"Scan to Pay ₹{total_bill}")
 
@@ -135,14 +148,57 @@ if menu == "কাস্টমার অর্ডার ফর্ম":
             order_id = insert_order(name, phone, service, copies, total_bill, payment_status, instruction, save_path)
             
             st.success(f"🎉 ধন্যবাদ {name}! STUDIO RAZ-এ আপনার অর্ডার সফলভাবে জমা হয়েছে। অর্ডার আইডি: #{order_id}")
+            st.warning("⚠️ আপনার এই **অর্ডার আইডি (#{order_id})** টি মনে রাখুন বা স্ক্রিনশট নিয়ে রাখুন, এটি দিয়ে পরে অর্ডারের কাজ কতদূর তা ট্র্যাক করতে পারবেন।")
             
-            # WhatsApp বাটন
             msg = f"নমস্কার STUDIO RAZ, আমি একটি অর্ডার দিয়েছি।\nঅর্ডার আইডি: #{order_id}\nনাম: {name}\nসার্ভিস: {service} ({copies} কপি)\nবিল: ₹{total_bill}"
             wa_url = f"https://wa.me/{STUDIO_WHATSAPP}?text={urllib.parse.quote(msg)}"
-            
             st.link_button("📲 STUDIO RAZ-কে WhatsApp-এ মেসেজ পাঠান", wa_url, use_container_width=True)
 
-# ================= অ্যাডমিন প্যানেল =================
+# ================= ২. কাস্টমার অর্ডার ট্র্যাকিং =================
+elif menu == "🔍 অর্ডার ট্র্যাক করুন":
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>📦 আপনার অর্ডারের অগ্রগতি দেখুন</h2>", unsafe_allow_html=True)
+    st.write("আপনার **অর্ডার আইডি** অথবা **মোবাইল নম্বর** দিয়ে সার্চ করুন:")
+    
+    col_t1, col_t2 = st.columns([3, 1])
+    with col_t1:
+        search_query = st.text_input("অর্ডার আইডি বা মোবাইল নম্বর লিখুন", placeholder="যেমন: 1 বা 9876543210")
+    with col_t2:
+        st.write("")
+        st.write("")
+        track_btn = st.button("সার্চ করুন", use_container_width=True)
+
+    if track_btn and search_query:
+        found_orders = search_orders_by_customer(search_query)
+        if found_orders.empty:
+            st.error("কোনো অর্ডার পাওয়া যায়নি। সঠিক অর্ডার আইডি বা মোবাইল নম্বর দিয়েছেন কি না যাচাই করুন।")
+        else:
+            st.success(f"{len(found_orders)} টি অর্ডার পাওয়া গেছে:")
+            
+            # স্ট্যাটাস কালার ও ব্যাজ
+            status_colors = {
+                "Pending": "🟠 অপেক্ষমাণ (Pending)",
+                "Editing": "🔵 এডিটিং চলছে (Editing)",
+                "Printed": "🟣 প্রিন্ট হয়ে গেছে (Printed)",
+                "Ready for Delivery": "🟢 ডেলিভারির জন্য প্রস্তুত (Ready for Delivery)",
+                "Delivered": "✅ ডেলিভারি সম্পন্ন (Delivered)"
+            }
+
+            for _, row in found_orders.iterrows():
+                badge = status_colors.get(row['status'], row['status'])
+                with st.container(border=True):
+                    c_a, c_b = st.columns([2, 1])
+                    with c_a:
+                        st.subheader(f"অর্ডার #{row['id']} - {row['customer_name']}")
+                        st.write(f"📅 **অর্ডারের তারিখ:** {row['date']}")
+                        st.write(f"🖼 **সার্ভিস:** {row['service_type']} ({row['copies']} কপি)")
+                        st.write(f"💵 **বিল:** ₹{row['total_price']} ({row['payment_status']})")
+                    with c_b:
+                        st.markdown("### বর্তমান স্ট্যাটাস:")
+                        st.info(f"### {badge}")
+                        if row['status'] == "Ready for Delivery":
+                            st.success("🎉 আপনার ফটো সম্পূর্ণ রেডি! আপনি স্টুডিওতে এসে সংগ্রহ করতে পারেন।")
+
+# ================= ৩. অ্যাডমিন প্যানেল =================
 elif menu == "স্টুডিও অ্যাডমিন প্যানেল":
     st.markdown("<h2 style='color: #1E3A8A;'>🛠 STUDIO RAZ - কন্ট্রোল প্যানেল</h2>", unsafe_allow_html=True)
     admin_pass = st.sidebar.text_input("পাসওয়ার্ড", type="password")
