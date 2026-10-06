@@ -83,14 +83,20 @@ def generate_upi_qr(upi_id, amount, note):
     return buffer.getvalue()
 
 # ================= পেজ লেআউট =================
-st.set_page_config(page_title="Studio Photo Portal", page_icon="📸", layout="wide")
+st.set_page_config(st.set_page_config(
+    page_title="রাজ ফটো স্টুডিও", # আপনার দোকানের নাম দিন
+    page_icon="📸", 
+    layout="wide"
+)", page_icon="📸", layout="wide")
 
 menu = st.sidebar.radio("Navigation", ["কাস্টমার অর্ডার ফর্ম", "স্টুডিও অ্যাডমিন প্যানেল"])
 
 # ================= কাস্টমার ফর্ম =================
+# ================= কাস্টমার ফর্ম =================
 if menu == "কাস্টমার অর্ডার ফর্ম":
-    st.title("📸 অনলাইন ফটো প্রিন্ট ও স্টুডিও অর্ডার")
-    st.write("আপনার ছবি আপলোড করুন এবং প্রয়োজনীয় তথ্য দিয়ে ঘরে বসেই অর্ডার করুন।")
+    # আপনার দোকানের নাম ও স্লোগান
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>📸 রাজ ফটো স্টুডিও 📸</h1>", unsafe_allow_html=True)
+    st.markdown("<h5 style='text-align: center; color: gray;'>পাসপোর্ট ছবি, ফটো ফ্রেম ও ডিজিটাল প্রিন্টিং সেবা</h5>", unsafe_allow_html=True)
     st.write("---")
 
     col1, col2 = st.columns([1, 1])
