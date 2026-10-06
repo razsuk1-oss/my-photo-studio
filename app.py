@@ -12,16 +12,16 @@ UPLOAD_FOLDER = "uploaded_photos"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # আপনার তথ্য এখানে বসান:
-STUDIO_UPI_ID = "9775917899@ybl"      # আপনার GPay/PhonePe UPI ID
-STUDIO_WHATSAPP = "919775917899"         # দেশের কোডসহ আপনার WhatsApp নম্বর (যেমন: 91...)
+STUDIO_UPI_ID = "9775917899@YBL"      # আপনার GPay/PhonePe UPI ID
+STUDIO_WHATSAPP = "919775917899"         # দেশের কোডসহ আপনার WhatsApp নম্বর
 
 # প্রতি সার্ভিসের দাম (টাকায়)
 SERVICE_PRICES = {
-    "পাসপোর্ট সাইজ ফটো (3.2 x 4 cm)": 8,
+    "পাসপোর্ট সাইজ ফটো (3.2 x 4 cm)": 50,
     "স্ট্যাম্প সাইজ ফটো": 40,
-    "4R প্রিন্ট (4 x 6 ইঞ্চি)": 40,
+    "4R প্রিন্ট (4 x 6 ইঞ্চি)": 30,
     "A4 সাইজ ফ্রেম প্রিন্ট": 250,
-    "আইডি কার্ড প্রিন্ট": 75
+    "আইডি কার্ড প্রিন্ট": 60
 }
 
 # ================= ডাটাবেস =================
@@ -74,28 +74,24 @@ def update_status(order_id, new_status):
     conn.commit()
     conn.close()
 
-# UPI QR কোড তৈরি করার ফাংশন
 def generate_upi_qr(upi_id, amount, note):
-    upi_url = f"upi://pay?pa={upi_id}&pn=Studio&am={amount}&tn={urllib.parse.quote(note)}&cu=INR"
+    upi_url = f"upi://pay?pa={upi_id}&pn=STUDIO_RAZ&am={amount}&tn={urllib.parse.quote(note)}&cu=INR"
     qr = qrcode.make(upi_url)
     buffer = BytesIO()
     qr.save(buffer, format="PNG")
     return buffer.getvalue()
 
-# ================= পেজ লেআউট =================
-st.set_page_config(st.set_page_config(
-    page_title="রাজ স্টুডিও", # আপনার দোকানের নাম দিন
-    page_icon="📸", 
-    layout="wide"
-)", page_icon="📸", layout="wide")
+# ================= পেজ লেআউট ও নাম =================
+st.set_page_config(page_title="STUDIO RAZ | Online Order Portal", page_icon="📸", layout="wide")
 
+st.sidebar.markdown("<h2 style='text-align: center; color: #2563EB;'>📷 STUDIO RAZ</h2>", unsafe_allow_html=True)
 menu = st.sidebar.radio("Navigation", ["কাস্টমার অর্ডার ফর্ম", "স্টুডিও অ্যাডমিন প্যানেল"])
 
 # ================= কাস্টমার ফর্ম =================
 if menu == "কাস্টমার অর্ডার ফর্ম":
-    # আপনার দোকানের নাম ও স্লোগান
-    st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>📸 রাজ ফটো স্টুডিও 📸</h1>", unsafe_allow_html=True)
-    st.markdown("<h5 style='text-align: center; color: gray;'>পাসপোর্ট ছবি, ফটো ফ্রেম ও ডিজিটাল প্রিন্টিং সেবা</h5>", unsafe_allow_html=True)
+    # বড় ব্যানার হেডার
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>📸 STUDIO RAZ 📸</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray; font-size: 18px;'>অনলাইন ফটো প্রিন্টিং ও কাস্টমাইজেশন সার্ভিস</p>", unsafe_allow_html=True)
     st.write("---")
 
     col1, col2 = st.columns([1, 1])
@@ -118,8 +114,8 @@ if menu == "কাস্টমার অর্ডার ফর্ম":
         pay_method = st.radio("পেমেন্ট কীভাবে করবেন?", ["UPI (GPay/PhonePe/Paytm QR)", "দোকানে এসে ক্যাশ দেবেন (Cash on Delivery)"])
         
         if pay_method.startswith("UPI"):
-            st.write("নিচের QR কোডটি স্ক্যান করে পেমেন্ট করুন:")
-            qr_img = generate_upi_qr(STUDIO_UPI_ID, total_bill, f"Order by {phone}")
+            st.write("নিচের QR কোডটি স্ক্যান করে পেমেন্ট সম্পন্ন করুন:")
+            qr_img = generate_upi_qr(STUDIO_UPI_ID, total_bill, f"STUDIO RAZ Order {phone}")
             st.image(qr_img, width=220, caption=f"Scan to Pay ₹{total_bill}")
 
     submit = st.button("অর্ডার কনফার্ম করুন", use_container_width=True)
@@ -138,17 +134,17 @@ if menu == "কাস্টমার অর্ডার ফর্ম":
             payment_status = "Online Paid (Verify)" if pay_method.startswith("UPI") else "Cash on Delivery"
             order_id = insert_order(name, phone, service, copies, total_bill, payment_status, instruction, save_path)
             
-            st.success(f"🎉 ধন্যবাদ {name}! আপনার অর্ডার সফলভাবে জমা হয়েছে। অর্ডার আইডি: #{order_id}")
+            st.success(f"🎉 ধন্যবাদ {name}! STUDIO RAZ-এ আপনার অর্ডার সফলভাবে জমা হয়েছে। অর্ডার আইডি: #{order_id}")
             
             # WhatsApp বাটন
-            msg = f"নমস্কার, আমি স্টুডিও ওয়েবসাইটে একটি অর্ডার দিয়েছি।\nঅর্ডার আইডি: #{order_id}\nনাম: {name}\nসার্ভিস: {service} ({copies} কপি)\nবিল: ₹{total_bill}"
+            msg = f"নমস্কার STUDIO RAZ, আমি একটি অর্ডার দিয়েছি।\nঅর্ডার আইডি: #{order_id}\nনাম: {name}\nসার্ভিস: {service} ({copies} কপি)\nবিল: ₹{total_bill}"
             wa_url = f"https://wa.me/{STUDIO_WHATSAPP}?text={urllib.parse.quote(msg)}"
             
-            st.link_button("📲 স্টুডিওকে WhatsApp-এ মেসেজ পাঠান", wa_url, use_container_width=True)
+            st.link_button("📲 STUDIO RAZ-কে WhatsApp-এ মেসেজ পাঠান", wa_url, use_container_width=True)
 
 # ================= অ্যাডমিন প্যানেল =================
 elif menu == "স্টুডিও অ্যাডমিন প্যানেল":
-    st.title("🛠 স্টুডিও কন্ট্রোল প্যানেল")
+    st.markdown("<h2 style='color: #1E3A8A;'>🛠 STUDIO RAZ - কন্ট্রোল প্যানেল</h2>", unsafe_allow_html=True)
     admin_pass = st.sidebar.text_input("পাসওয়ার্ড", type="password")
 
     if admin_pass == "admin123":
@@ -164,10 +160,9 @@ elif menu == "স্টুডিও অ্যাডমিন প্যানে�
                         st.write(f"**তারিখ:** {row['date']}")
                         st.write(f"**ফোন:** {row['phone']}")
                         st.write(f"**সার্ভিস:** {row['service_type']} ({row['copies']} কপি)")
-                        st.write(f"**পেমেন্ট স্ট্যাটাস:** `{row['payment_status']}`")
+                        st.write(f"**পেমেন্ট:** `{row['payment_status']}`")
                         st.write(f"**নির্দেশ:** {row['instruction'] if row['instruction'] else 'নেই'}")
                         
-                        # স্ট্যাটাস আপডেট
                         current_status = row['status']
                         new_status = st.selectbox(
                             "কাজের স্ট্যাটাস পরিবর্তন করুন:",
